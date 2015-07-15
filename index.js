@@ -49,7 +49,7 @@ Linker.prototype.get = function (key, cb) {
         gt: LINK, lt: LINK + '~'
     });
     r.once('error', cb);
-    var tr = through.obj(write);
+    var tr = through.obj(write, end);
     pump(r, tr);
     return readonly(tr);
     
