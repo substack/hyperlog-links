@@ -46,7 +46,7 @@ Linker.prototype.get = function (key, cb) {
         return readonly(r);
     }
     var r = self.db.createReadStream({
-        gt: LINK, lt: LINK + '~'
+        gt: LINK + key + '!', lt: LINK + key + '!~'
     });
     r.once('error', cb);
     var tr = through.obj(write, end);
@@ -74,7 +74,7 @@ Linker.prototype.resume = function (opts) {
     
     function write (row, enc, next) {
         var ops = row.links.map(function (key) {
-            return { type: 'put', key: LINK + '!' + key, value: 0 };
+            return { type: 'put', key: LINK + key + '!' + row.key, value: 0 };
         });
         ops.push({ type: 'put', key: CHANGE, value: row.change });
         self.db.batch(ops, { valueEncoding: 'json' }, next);
