@@ -2,6 +2,7 @@ var through = require('through2');
 var readonly = require('read-only-stream');
 var EventEmitter = require('events').EventEmitter;
 var inherits = require('inherits');
+var once = require('once');
 var xtend = require('xtend');
 var pump = require('pump');
 
@@ -12,9 +13,10 @@ module.exports = Linker;
 inherits(Linker, EventEmitter);
 
 function Linker (log, db, opts) {
-    if (!(this instanceof Linker)) return new Linker(log, opts);
+    if (!(this instanceof Linker)) return new Linker(log, db, opts);
     var self = this;
     EventEmitter.call(self);
+    if (!opts) opts = {};
     self.log = log;
     self.db = db;
     self._ready = false;
@@ -32,8 +34,10 @@ function Linker (log, db, opts) {
     }
 }
 
-Linker.prototype.get = function (key) {
+Linker.prototype.get = function (key, cb) {
     var self = this;
+    var links = cb ? [] : null;
+    cb = once(cb || noop);
     if (!self._ready) {
         self.once('ready', function () {
             pump(self.get(key), r);
@@ -44,13 +48,19 @@ Linker.prototype.get = function (key) {
     var r = self.db.createReadStream({
         gt: LINK, lt: LINK + '~'
     });
+    r.once('error', cb);
     var tr = through.obj(write);
     pump(r, tr);
     return readonly(tr);
     
     function write (row, enc, next) {
         var parts = row.key.split('!');
+        if (links) links.push(parts[2]);
         this.push({ key: parts[2] });
+        next();
+    }
+    function end (next) {
+        cb(null, links);
         next();
     }
 };
@@ -59,12 +69,12 @@ Linker.prototype.resume = function (opts) {
     if (!opts) opts = {};
     var self = this;
     
-    var r = log.createReadStream(opts);
+    var r = self.log.createReadStream(xtend(opts, { live: false }));
     pump(r, through.obj(write, end));
     
     function write (row, enc, next) {
         var ops = row.links.map(function (key) {
-            return { type: 'put', key: LINK + key, value: 0 };
+            return { type: 'put', key: LINK + '!' + key, value: 0 };
         });
         ops.push({ type: 'put', key: CHANGE, value: row.change });
         self.db.batch(ops, { valueEncoding: 'json' }, next);
@@ -72,6 +82,12 @@ Linker.prototype.resume = function (opts) {
     
     function end () {
         self._ready = true;
+        if (opts.live === true) {
+            var r = self.log.createReadStream(xtend(opts, { live: true }));
+        }
         self.emit('ready');
+        pump(r, through.obj(write));
     }
 };
+
+function noop () {}
