@@ -40,7 +40,7 @@ Linker.prototype.get = function (key, cb) {
     cb = once(cb || noop);
     if (!self._ready) {
         self.once('ready', function () {
-            pump(self.get(key), r);
+            pump(self.get(key, cb), r);
         });
         var r = through.obj();
         return readonly(r);
@@ -70,7 +70,10 @@ Linker.prototype.resume = function (opts) {
     var self = this;
     
     var r = self.log.createReadStream(xtend(opts, { live: false }));
-    pump(r, through.obj(write, end));
+    var tr = through.obj(write, end);
+    r.on('error', function (err) { self.emit('error', err) });
+    tr.on('error', function (err) { self.emit('error', err) });
+    pump(r, tr);
     
     function write (row, enc, next) {
         var ops = row.links.map(function (key) {

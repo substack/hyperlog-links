@@ -1,0 +1,43 @@
+{
+  "name": "hyperlog-links",
+  "version": "1.0.0",
+  "description": "compute a reverse link index for hyperlog feeds",
+  "main": "index.js",
+  "directories": {
+    "example": "example",
+    "test": "test"
+  },
+  "dependencies": {
+    "inherits": "^2.0.1",
+    "once": "^1.3.2",
+    "pump": "^1.0.0",
+    "read-only-stream": "^1.1.1",
+    "through2": "^2.0.0",
+    "xtend": "^4.0.0"
+  },
+  "devDependencies": {
+    "hyperlog": "^4.2.1",
+    "memdb": "^1.0.1",
+    "tape": "^4.0.0"
+  },
+  "scripts": {
+    "test": "tape test/*.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/substack/hyperlog-links.git"
+  },
+  "keywords": [
+    "backward",
+    "cache",
+    "hyperlog",
+    "index",
+    "link"
+  ],
+  "author": "substack",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/substack/hyperlog-links/issues"
+  },
+  "homepage": "https://github.com/substack/hyperlog-links#readme"
+}
